@@ -1,6 +1,4 @@
 ﻿using BepInEx;
-using R2API.Utils;
-using R2API.Networking;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using RiskOfOptions;
@@ -36,7 +34,6 @@ namespace OriginalSoundTrack
     [BepInPlugin("com.mrcountermax.moreostsmod", "MoreOSTsMod", "2.0.0")]
     //[R2APISubmoduleDependency(nameof(NetworkingAPI))]
     [BepInDependency("com.rune580.riskofoptions")]
-    [NetworkCompatibilityAttribute(CompatibilityLevel.NoNeedForSync, VersionStrictness.DifferentModVersionsAreOk)]
     //This is the main declaration of our plugin class. BepInEx searches for all classes inheriting from BaseUnityPlugin to initialize on startup.
     //BaseUnityPlugin itself inherits from MonoBehaviour, so you can use this as a reference for what you can declare and use in your plugin class: https://docs.unity3d.com/ScriptReference/MonoBehaviour.html
     public class OriginalSoundTrack : BaseUnityPlugin {
