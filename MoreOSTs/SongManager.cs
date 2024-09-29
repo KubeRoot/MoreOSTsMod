@@ -9,7 +9,7 @@ namespace MoreOSTs
     public class SongManager
     {
         public MoreOSTs Plugin;
-        public static string[] AllowedExtensions = { "wav", "mp3" };
+        public static string[] AllowedExtensions = { ".wav", ".mp3" };
 
         public Serialization.settings RawSettings;
         public Song[] Songs;
@@ -24,7 +24,6 @@ namespace MoreOSTs
             public bool Loop;
 
             public string FilePath;
-            public string FullFilePath;
 
             public Song(Serialization.song rawSong)
             {
@@ -35,7 +34,6 @@ namespace MoreOSTs
                 Loop = rawSong.loop;
 
                 FilePath = null;
-                FullFilePath = null;
             }
         }
 
@@ -67,11 +65,6 @@ namespace MoreOSTs
                 }
 
                 Songs = Songs.Where(song => song.FilePath != null).ToArray();
-            }
-
-            for (int i = 0; i < Songs.Length; i++)
-            {
-                Songs[i].FullFilePath = Path.Join(songsPath, Songs[i].FilePath);
             }
         }
         

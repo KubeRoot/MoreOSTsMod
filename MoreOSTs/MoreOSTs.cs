@@ -1,7 +1,7 @@
 ﻿using BepInEx;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using RiskOfOptions;
+// using RiskOfOptions;
 using RiskOfOptions.Options;
 using RiskOfOptions.OptionConfigs;
 
@@ -18,10 +18,12 @@ using System.Globalization;
 using System.Security.Permissions;
 using BepInEx.Configuration;
 using BepInEx.Logging;
-using NAudio.Extras;
+using EntityStates.Missions.BrotherEncounter;
+using RiskOfOptions;
 using RoR2;
 using Path = System.IO.Path;
 
+//TODO: Handle song running out with no song queued
 
 //Including this allows the mod to access private fields/methods on game classes
 #pragma warning disable CS0618 // Type or member is obsolete
@@ -37,11 +39,12 @@ namespace MoreOSTs
     // Also don't forget to mute the in game music in the in game settings (this plugin doesn't take away RoR2 music).
 
     [BepInPlugin("com.mrcountermax.moreostsmod", "MoreOSTsMod", "2.0.0")]
-    [BepInDependency("com.rune580.riskofoptions")]
+    // [BepInDependency("com.rune580.riskofoptions")]
     public class MoreOSTs : BaseUnityPlugin {
 
         //private float globalMusicVolume = 0.5f; // default global music volume.
         // private ConfigEntry<float> globalMusicVolume;
+        private ConfigEntry<bool> continueBossMusicAfterTeleporter;
 
         internal ManualLogSource logger => Logger;
 
@@ -50,42 +53,53 @@ namespace MoreOSTs
         private SongPlayer songPlayer;
         public void OnEnable()
         {
-            hooks = new Hooks(this).Apply();
+            hooks.Apply();
+            AkSoundEngine.SetRTPCValue(AudioManager.cvVolumeMsx.rtpcName, 0);
+            if(PauseManager.isPaused)
+                songPlayer.Pause();
+            
+            SelectSong();
         }
 
         public void OnDisable()
         {
             hooks?.Remove();
             songPlayer?.StopImmediate();
+            
+            AudioManager.cvVolumeParentMsx.SetString(AudioManager.cvVolumeParentMsx.GetString());
+        }
+
+        public void OnDestroy()
+        {
+            songPlayer?.Dispose();
+            songPlayer = null;
         }
 
         public void Awake() {
             // var pluginPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             var pluginPath = "Z:/home/kuberoot/.config/r2modmanPlus-local/RiskOfRain2/profiles/Dev/BepInEx/dev_music/"; //TODO: Testing code
+
+            continueBossMusicAfterTeleporter = Config.Bind("General", "ContinueBossMusicAfterTeleporter", true,
+                "If set, boss music continues playing after the teleporter finishes charging.\nIf disabled, regular stage music is played instead.");
             
-            // globalMusicVolume = Config.Bind(new ConfigDefinition("General", "Volume"), 40f, new ConfigDescription("The volume of the More OSTs Mod music. KEEP THE GAME'S MUSIC VOLUME AT 0!!!", new AcceptableValueRange<float>(0, 100)));
-            // ModSettingsManager.AddOption(new StepSliderOption(globalMusicVolume, new StepSliderConfig{
-            //     min = 0f,
-            //     max = 100f,
-            //     increment = 1f,
-            //     formatString = "{0:0}%"
-            // }));
+            // #region Configuring RiskOfOptions
+            // var modIconTexture = new Texture2D(0, 0);
             //
-            // globalMusicVolume.SettingChanged += (_, __) => UpdateVolume();
+            // using (Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("MoreOSTs.ror2_more_osts_mod_clean.png"))
+            // using (MemoryStream memoryStream = new MemoryStream())
+            // {
+            //     stream.CopyTo(memoryStream);
+            //     byte[] data = memoryStream.ToArray();
+            //     modIconTexture.LoadImage(data);
+            // }
+            //
+            // Sprite modIconSprite = Sprite.Create(modIconTexture, new Rect(0, 0, modIconTexture.width, modIconTexture.height), new Vector2(0, 0));
+            // ModSettingsManager.SetModIcon(modIconSprite);
+            //
+            // ModSettingsManager.AddOption(new CheckBoxOption(continueBossMusicAfterTeleporter));
+            // #endregion
 
-
-            var modIconTexture = new Texture2D(0, 0);
-
-            using (Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("MoreOSTs.ror2_more_osts_mod_clean.png"))
-            using (MemoryStream memoryStream = new MemoryStream())
-            {
-                stream.CopyTo(memoryStream);
-                byte[] data = memoryStream.ToArray();
-                modIconTexture.LoadImage(data);
-            }
-
-            Sprite modIconSprite = Sprite.Create(modIconTexture, new Rect(0, 0, modIconTexture.width, modIconTexture.height), new Vector2(0, 0));
-            ModSettingsManager.SetModIcon(modIconSprite);
+            hooks = new Hooks(this);
 
             songManager = new SongManager(this);          
             songManager.Load(Path.Combine(pluginPath, "settings.xml"), Path.Combine(pluginPath, "music"));
@@ -104,13 +118,16 @@ namespace MoreOSTs
         public bool IsTeleporterActive => (TeleporterInteraction.instance?.isCharging ?? false)
                                           || (TeleporterInteraction.instance?.isIdleToCharging ?? false);
 
+        public bool IsTeleporterCharged => TeleporterInteraction.instance?.isCharged ?? false;
+
         public void UpdateVolume() {
-            songPlayer.Volume = float.Parse(AudioManager.cvVolumeMsx.GetString() ?? "100") / 100f; //TODO: Test if this is the correct value
+            songPlayer.Volume = float.Parse(AudioManager.cvVolumeParentMsx.GetString() ?? "100") / 100f;
         }
 
         public void SelectSong()
         {
-            var boss = IsTeleporterActive;
+            var boss = IsTeleporterActive || (IsTeleporterCharged && continueBossMusicAfterTeleporter.Value)
+                || IsMithrixActive || (IsMithrixDead && continueBossMusicAfterTeleporter.Value);
             var scene = SceneManager.GetActiveScene().name;
 
             // Try to get a new song to play, if one isn't found, try to find any song
@@ -124,10 +141,45 @@ namespace MoreOSTs
                 return;
             }
             
+            Logger.LogDebug($"Selected song: {song.Value.Name}");
             songPlayer.Play(song.Value);
         }
 
         public void Pause() => songPlayer.Pause();
         public void Resume() => songPlayer.Resume();
+
+        public void SceneChanged()
+        {
+            mithrixState = null;
+            
+            SelectSong();
+        }
+
+        public void TeleporterStateChanged()
+        {
+            if(IsTeleporterActive && !IsTeleporterCharged)
+                SelectSong(); //Teleporter started charging
+            
+            if(!IsTeleporterCharged && !continueBossMusicAfterTeleporter.Value)
+                SelectSong(); //Teleporter finished charging, we don't continue boss music after teleporter
+        }
+
+        private BrotherEncounterBaseState mithrixState;
+
+        private bool IsMithrixActive => mithrixState != null && !IsMithrixDead;
+        private bool IsMithrixDead => mithrixState is BossDeath || mithrixState is EncounterFinished;
+
+        public void MithrixStateChanged(BrotherEncounterBaseState newState)
+        {
+            if(!IsMithrixActive)
+                SelectSong(); //Mithrix fight started
+
+            bool wasMithrixDead = IsMithrixDead;
+            
+            mithrixState = newState;
+            
+            if(!wasMithrixDead && IsMithrixDead && !continueBossMusicAfterTeleporter.Value)
+                SelectSong(); //Mithrix died, we don't continue boss music after teleporter
+        }
     }
 }
