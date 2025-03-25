@@ -76,8 +76,8 @@ namespace MoreOSTs
         }
 
         public void Awake() {
-            // var pluginPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            var pluginPath = "Z:/home/kuberoot/.config/r2modmanPlus-local/RiskOfRain2/profiles/Dev/BepInEx/dev_music/"; //TODO: Testing code
+            var pluginPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            // var pluginPath = "Z:/home/kuberoot/.config/r2modmanPlus-local/RiskOfRain2/profiles/Dev/BepInEx/dev_music/"; //TODO: Testing code
 
             continueBossMusicAfterTeleporter = Config.Bind("General", "ContinueBossMusicAfterTeleporter", true,
                 "If set, boss music continues playing after the teleporter finishes charging.\nIf disabled, regular stage music is played instead.");
@@ -171,12 +171,13 @@ namespace MoreOSTs
 
         public void MithrixStateChanged(BrotherEncounterBaseState newState)
         {
-            if(!IsMithrixActive)
-                SelectSong(); //Mithrix fight started
-
+            bool wasMithrixActive = IsMithrixActive;
             bool wasMithrixDead = IsMithrixDead;
             
             mithrixState = newState;
+            
+            if(!wasMithrixActive)
+                SelectSong(); //Mithrix fight started
             
             if(!wasMithrixDead && IsMithrixDead && !continueBossMusicAfterTeleporter.Value)
                 SelectSong(); //Mithrix died, we don't continue boss music after teleporter
