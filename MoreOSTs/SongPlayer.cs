@@ -259,7 +259,8 @@ namespace MoreOSTs
             //TODO: Test detecting when song stops playing and playing another
             if (!(currentSong?.Loop ?? false) &&
                 (currentFader?.fadeState == FadeInOutSampleProvider.FadeState.FullVolume || currentFader?.fadeState == FadeInOutSampleProvider.FadeState.FadingIn) &&
-                currentWaveStream != null && timeLeftMilliseconds < FadeDuration + 100)
+                currentWaveStream != null && timeLeftMilliseconds < FadeDuration + 200 &&
+                songPromise is null)
             {
                 Plugin.logger.LogDebug($"Song running out: {timeLeftMilliseconds}");
                 SongEnding?.Invoke();   
