@@ -1,3 +1,4 @@
+using EntityStates;
 using EntityStates.Missions.BrotherEncounter;
 using RoR2;
 using RoR2.ConVar;
@@ -26,11 +27,11 @@ namespace MoreOSTs
             On.EntityStates.Missions.BrotherEncounter.BrotherEncounterBaseState.OnEnter +=
                 On_BrotherEncounterBaseState_OnEnter;
 
-            //TODO: Mithrix - Test
-            //TODO: Voidling
-            // On.EntityStates.VoidRaidCrab.SpawnState.OnEnter
-            // On.EntityStates.VoidRaidCrab.SpawnState.DeathState
-            //TODO: False son
+            On.EntityStates.VoidRaidCrab.SpawnState.OnEnter += On_VoidRaidCrab_SpawnState_Enter;
+            On.EntityStates.VoidRaidCrab.DeathState.OnEnter += On_VoidRaidCrab_DeathState_Enter;
+
+            On.EntityStates.FalseSonBoss.HeartSpawnState.OnEnter += On_FalseSonBoss_HeartSpawnState_Enter;
+            On.EntityStates.FalseSonBoss.SkyJumpDeathState.OnEnter += On_FalseSonBoss_SkyJumpDeathState_Enter;
         }
 
         public void Remove()
@@ -44,6 +45,12 @@ namespace MoreOSTs
             
             On.EntityStates.Missions.BrotherEncounter.BrotherEncounterBaseState.OnEnter -=
                 On_BrotherEncounterBaseState_OnEnter;
+            
+            On.EntityStates.VoidRaidCrab.SpawnState.OnEnter -= On_VoidRaidCrab_SpawnState_Enter;
+            On.EntityStates.VoidRaidCrab.DeathState.OnEnter -= On_VoidRaidCrab_DeathState_Enter;
+
+            On.EntityStates.FalseSonBoss.HeartSpawnState.OnEnter -= On_FalseSonBoss_HeartSpawnState_Enter;
+            On.EntityStates.FalseSonBoss.SkyJumpDeathState.OnEnter -= On_FalseSonBoss_SkyJumpDeathState_Enter;
         }
 
         private void On_VolumeConVar_SetString(On.RoR2.AudioManager.VolumeConVar.orig_SetString orig, BaseConVar self, string newvalue)
@@ -81,6 +88,34 @@ namespace MoreOSTs
             orig(self);
             
             Plugin.MithrixStateChanged(self);
+        }
+
+        private void On_VoidRaidCrab_SpawnState_Enter(On.EntityStates.VoidRaidCrab.SpawnState.orig_OnEnter orig, EntityStates.VoidRaidCrab.SpawnState self)
+        {
+            orig(self);
+            
+            Plugin.VoidlingStateChanged(self);
+        }
+
+        private void On_VoidRaidCrab_DeathState_Enter(On.EntityStates.VoidRaidCrab.DeathState.orig_OnEnter orig, EntityStates.VoidRaidCrab.DeathState self)
+        {
+            orig(self);
+            
+            Plugin.VoidlingStateChanged(self);
+        }
+
+        private void On_FalseSonBoss_HeartSpawnState_Enter(On.EntityStates.FalseSonBoss.HeartSpawnState.orig_OnEnter orig, EntityStates.FalseSonBoss.HeartSpawnState self)
+        {
+            orig(self);
+            
+            Plugin.FalseSonStateChanged(self);
+        }
+
+        private void On_FalseSonBoss_SkyJumpDeathState_Enter(On.EntityStates.FalseSonBoss.SkyJumpDeathState.orig_OnEnter orig, EntityStates.FalseSonBoss.SkyJumpDeathState self)
+        {
+            orig(self);
+            
+            Plugin.FalseSonStateChanged(self);
         }
     }
 }

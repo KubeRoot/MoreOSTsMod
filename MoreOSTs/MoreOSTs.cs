@@ -18,6 +18,7 @@ using System.Globalization;
 using System.Security.Permissions;
 using BepInEx.Configuration;
 using BepInEx.Logging;
+using EntityStates;
 using EntityStates.Missions.BrotherEncounter;
 using RiskOfOptions;
 using RoR2;
@@ -127,7 +128,9 @@ namespace MoreOSTs
         public void SelectSong()
         {
             var boss = IsTeleporterActive || (IsTeleporterCharged && continueBossMusicAfterTeleporter.Value)
-                || IsMithrixActive || (IsMithrixDead && continueBossMusicAfterTeleporter.Value);
+                || IsMithrixActive || (IsMithrixDead && continueBossMusicAfterTeleporter.Value)
+                || IsVoidlingActive || (IsVoidlingDead && continueBossMusicAfterTeleporter.Value)
+                || IsFalseSonActive || (IsFalseSonDead && continueBossMusicAfterTeleporter.Value);
             var scene = SceneManager.GetActiveScene().name;
 
             // Try to get a new song to play, if one isn't found, try to find any song
@@ -151,6 +154,8 @@ namespace MoreOSTs
         public void SceneChanged()
         {
             mithrixState = null;
+            voidlingState = null;
+            falseSonState = null;
             
             SelectSong();
         }
@@ -181,6 +186,44 @@ namespace MoreOSTs
             
             if(!wasMithrixDead && IsMithrixDead && !continueBossMusicAfterTeleporter.Value)
                 SelectSong(); //Mithrix died, we don't continue boss music after teleporter
+        }
+
+        private BaseState voidlingState;
+
+        private bool IsVoidlingActive => voidlingState != null && !IsVoidlingDead;
+        private bool IsVoidlingDead => voidlingState is EntityStates.VoidRaidCrab.DeathState;
+        
+        public void VoidlingStateChanged(BaseState newState)
+        {
+            bool wasVoidlingActive = IsVoidlingActive;
+            bool wasVoidlingDead = IsVoidlingDead;
+            
+            voidlingState = newState;
+                    
+            if(!wasVoidlingActive && IsVoidlingActive)
+                SelectSong();
+            
+            if(!wasVoidlingDead && IsVoidlingDead && !continueBossMusicAfterTeleporter.Value)
+                SelectSong();
+        }
+
+        private BaseState falseSonState;
+
+        private bool IsFalseSonActive => falseSonState != null && !IsFalseSonDead;
+        private bool IsFalseSonDead => falseSonState is EntityStates.FalseSonBoss.SkyJumpDeathState;
+        
+        public void FalseSonStateChanged(BaseState newState)
+        {
+            bool wasFalseSonActive = IsFalseSonActive;
+            bool wasFalseSonDead = IsFalseSonDead;
+
+            falseSonState = newState;
+            
+            if(!wasFalseSonActive && IsFalseSonActive)
+                SelectSong();
+            
+            if(!wasFalseSonDead && IsFalseSonDead && !continueBossMusicAfterTeleporter.Value)
+                SelectSong();
         }
     }
 }
