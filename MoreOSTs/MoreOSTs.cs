@@ -46,6 +46,7 @@ namespace MoreOSTs
         //private float globalMusicVolume = 0.5f; // default global music volume.
         // private ConfigEntry<float> globalMusicVolume;
         private ConfigEntry<bool> continueBossMusicAfterTeleporter;
+        private ConfigEntry<bool> continueBossMusicAfterEndBossDeath;
 
         internal ManualLogSource logger => Logger;
 
@@ -82,6 +83,8 @@ namespace MoreOSTs
 
             continueBossMusicAfterTeleporter = Config.Bind("General", "ContinueBossMusicAfterTeleporter", true,
                 "If set, boss music continues playing after the teleporter finishes charging.\nIf disabled, regular stage music is played instead.");
+            continueBossMusicAfterEndBossDeath = Config.Bind("General", "ContinueBossMusicAfterEndBossDeath", true,
+                "If set, boss music continues playing after an end boss is defeated.\nIf disabled, regular stage music is played instead.");
             
             // #region Configuring RiskOfOptions
             // var modIconTexture = new Texture2D(0, 0);
@@ -128,9 +131,9 @@ namespace MoreOSTs
         public void SelectSong()
         {
             var boss = IsTeleporterActive || (IsTeleporterCharged && continueBossMusicAfterTeleporter.Value)
-                || IsMithrixActive || (IsMithrixDead && continueBossMusicAfterTeleporter.Value)
-                || IsVoidlingActive || (IsVoidlingDead && continueBossMusicAfterTeleporter.Value)
-                || IsFalseSonActive || (IsFalseSonDead && continueBossMusicAfterTeleporter.Value);
+                || IsMithrixActive || (IsMithrixDead && continueBossMusicAfterEndBossDeath.Value)
+                || IsVoidlingActive || (IsVoidlingDead && continueBossMusicAfterEndBossDeath.Value)
+                || IsFalseSonActive || (IsFalseSonDead && continueBossMusicAfterEndBossDeath.Value);
             var scene = SceneManager.GetActiveScene().name;
 
             // Try to get a new song to play, if one isn't found, try to find any song
